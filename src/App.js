@@ -1,7 +1,7 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import './App.css';
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'; // Import auth functions
+import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'; // Import auth functions
 import { getFirestore, collection, query, orderBy, limit, addDoc, serverTimestamp } from 'firebase/firestore'; // Import Firestore functions
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
@@ -31,7 +31,7 @@ function App() {
       <div className="nav-header">
         <SignOut />
       </div>
-      <div className="">
+      <div>
         {user ? <ChatRoom /> : <SignIn />}
       </div>
     </div>
@@ -40,16 +40,53 @@ function App() {
 
 function SignIn() {
   const provider = new GoogleAuthProvider();
+  const [email, setEmail] = useState(''); // State for email
+  const [password, setPassword] = useState(''); // State for password
+  const [error, setError] = useState(''); // State for error messages
 
   const signInWithGoogle = () => {
     signInWithPopup(auth, provider); // Correctly sign in with Google
   };
+
+  const handleEmailSignIn = async (e) => {
+    e.preventDefault(); // Prevent the default form submission
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password); // Sign in with email and password
+      setEmail(''); // Clear email input
+      setPassword(''); // Clear password input
+    } catch (error) {
+      console.error("Error signing in with email: ", error);
+      setError(error.message); // Set error message
+    }
+  };
+
 
   return (
     <div className="center-div">
       <div>
         <h1>Welcome to Late Chat</h1>
       </div>
+
+      <form onSubmit={handleEmailSignIn}> {/* Email/password form */}
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)} // Update email state
+          placeholder="Email"
+          required
+        />
+        <input
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)} // Update password state
+          placeholder="Password"
+          required
+        />
+        <button type="submit">Sign In</button>
+        {error && <p style={{ color: 'red' }}>{error}</p>} {/* Display error message */}
+      </form>
+
       <div>
         <button className="signGoogle" onClick={signInWithGoogle}>Sign in with Google
           <img className="google-icon" src="/google-icon.png" alt="Google Icon" />
@@ -92,6 +129,13 @@ function ChatRoom() {
     dummy.current.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // useEffect to log messages to the console whenever they change
+  useEffect(() => {
+    if (messages) {
+      console.log('Current Messages:', messages);
+    }
+  }, [messages]); 
+
   return (<>
     <main>
 
@@ -101,7 +145,7 @@ function ChatRoom() {
 
     </main>
 
-    <form onSubmit={sendMessage}>
+    <form className="form-send" onSubmit={sendMessage}>
       <div className="div-input">
         <input value={formValue} onChange={(e) => setFormValue(e.target.value)} placeholder="say something nice" />
 
