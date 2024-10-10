@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './App.css';
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'; // Import auth functions
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'; // Import auth functions
 import { getFirestore, collection, query, orderBy, limit, addDoc, serverTimestamp } from 'firebase/firestore'; // Import Firestore functions
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
@@ -26,19 +26,105 @@ const firestore = getFirestore(firebaseApp); // Get Firestore instance
 function App() {
   const [user] = useAuthState(auth); // Correctly get the user state
 
+  const [isSigningUp, setIsSigningUp] = useState(false);
+
   return (
     <div className="head-background">
       <div className="nav-header">
-        <SignOut />
+        {user ? <SignOut /> : null}
       </div>
       <div>
-        {user ? <ChatRoom /> : <SignIn />}
+      {user ? (
+          <ChatRoom />
+        ) : (
+          isSigningUp ? (
+            <SignUp setIsSigningUp={setIsSigningUp} />
+          ) : (
+            <SignIn setIsSigningUp={setIsSigningUp} />
+          )
+        )}
       </div>
     </div>
   );
 }
 
-function SignIn() {
+function SignUp({setIsSigningUp}){
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSignup = async (e) => {
+    e.preventDefault();
+
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      return;
+    }
+
+    try {
+      await createUserWithEmailAndPassword(auth, email, password);
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
+      setError('');
+    } catch (error) {
+      setError(error.message);
+    }
+  };
+
+
+  return (
+    <div className="center-div">
+      <div>
+        <h1>Create your account</h1>
+      </div>
+
+      <form onSubmit={handleSignup}>
+        <div>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
+            required
+          />
+        </div>
+        <div>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            required
+          />
+        </div>
+        <div>
+          <input
+            type="password"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+            placeholder="Confirm Password"
+            required
+          />
+        </div>
+        <div className="center-btn">
+          <button type="submit">Sign Up</button>
+        </div>
+        {error && <p style={{ color: 'red' }}>{error}</p>}
+      </form>
+
+      <div className="signup-link">
+        Already have an account?{' '}
+        <span onClick={() => setIsSigningUp(false)}>
+          Sign In here
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function SignIn({setIsSigningUp}) {
   const provider = new GoogleAuthProvider();
   const [email, setEmail] = useState(''); // State for email
   const [password, setPassword] = useState(''); // State for password
@@ -69,28 +155,46 @@ function SignIn() {
       </div>
 
       <form onSubmit={handleEmailSignIn}> {/* Email/password form */}
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)} // Update email state
-          placeholder="Email"
-          required
-        />
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)} // Update password state
-          placeholder="Password"
-          required
-        />
-        <button type="submit">Sign In</button>
+        <div>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)} // Update email state
+            placeholder="Email"
+            required
+          />
+        </div>
+        
+        <div>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)} // Update password state
+            placeholder="Password"
+            required
+          />
+        </div>
+        <div className="center-btn">
+          <button type="submit">Sign In</button>
+        </div>
         {error && <p style={{ color: 'red' }}>{error}</p>} {/* Display error message */}
       </form>
 
+      <div className="divider">
+        or
+      </div>
+      
       <div>
         <button className="signGoogle" onClick={signInWithGoogle}>Sign in with Google
-          <img className="google-icon" src="/google-icon.png" alt="Google Icon" />
+          <img className="google-icon" src="/google.png" alt="Google Icon" />
         </button>
+      </div>
+
+      <div className="signup-link">
+        Don't have an account? {' '}
+        <span onClick={() => setIsSigningUp(true)}>
+          Signup here
+        </span>
       </div>
     </div>
   );

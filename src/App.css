@@ -38,37 +38,75 @@ html{
   color: white;
 }
 
-.center-div button {
-  margin-top: 10px; /* Space above button */
-  margin-bottom: 10px;
-  padding: 10px; /* Padding for button */
-  background-color: #007bff; /* Button color */
-  color: white; /* Text color */
-  border: none; /* No border */
-  border-radius: 5px; /* Rounded corners */
-  cursor: pointer; /* Pointer cursor on hover */
-}
-
-.center-div button:hover {
-  background-color: #0056b3; /* Darker blue on hover */
-}
-
-
-.signGoogle, .sign-out{
+.center-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 5px 10px;
-  font-family: Arial, Helvetica, sans-serif;
-  border-radius: 5px;
-  cursor: pointer;
 }
 
-.google-icon{
+.center-div button {
+  margin-top: 10px; /* Space above button */
+  margin-bottom: 10px;
+  padding: 10px 20px; /* Increased padding for better button size */
+  background-color: #4285F4; /* Google Blue */
+  color: white; /* Text color */
+  font-size: 16px; /* Font size */
+  border: none; /* No border */
+  border-radius: 20px; /* Rounded corners */
+  cursor: pointer; /* Pointer cursor on hover */
+  transition: background-color 0.3s ease; /* Smooth color transition */
+}
+
+
+.signGoogle:hover {
+  background-color: #357AE8; /* Darker blue on hover */
+}
+
+/* Icon for Google Button */
+.google-icon {
   width: 20px;
   height: 20px;
-  margin-left: 10px;
+  margin-left: 10px; /* Space between icon and text */
+  vertical-align: middle; /* Align icon with text */
 }
+
+/* Optional: Button Hover Effect */
+.center-div button:hover {
+  background-color: #0056b3; /* Default hover effect */
+  color: white; /* Ensure text stays white on hover */
+}
+
+.signup-link{
+  color: white;
+  font-size: medium;
+  font-family: Arial, sans-serif;
+  /*font-weight: 600;*/
+  margin-top: 10px;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  color: #fff; /* Set the color of the "Or" */
+  font-size: medium;
+  margin: 20px 0; /* Add some spacing between the form and Google sign-in */
+}
+
+.divider::before,
+.divider::after {
+  content: '';
+  flex: 1;
+  border-bottom: 1px solid #fff; /* Style the horizontal lines */
+  width: 75px;
+  margin: 0 20px; /* Spacing between the "Or" text and the lines */
+}
+
+span{
+  cursor: pointer;
+  color: blue; 
+}
+
 
 /*_______Chat_Room_Style________*/
 
@@ -165,4 +203,16 @@ input {
   display: flex;
   flex-direction: column;
   padding: 10px;
+}
+
+.sign-out{
+  background-color: red;
+  color: white;
+  cursor: pointer;
+  padding: 5px 10px;
+  border-radius: 20px;
+}
+
+.sign-out:hover{
+  background-color: brown;
 }
