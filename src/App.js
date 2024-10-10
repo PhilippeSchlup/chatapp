@@ -1,8 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './App.css';
 import { initializeApp } from 'firebase/app';
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'; // Import auth functions
-import { getFirestore, collection, query, orderBy, limit, addDoc, serverTimestamp } from 'firebase/firestore'; // Import Firestore functions
+import { getAuth, updateProfile, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'; // Import auth functions
+import { getFirestore, where, collection, query, orderBy, limit, addDoc, writeBatch, getDocs, serverTimestamp } from 'firebase/firestore'; // Import Firestore functions
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
 import 'bootstrap-icons/font/bootstrap-icons.css';
@@ -27,22 +27,28 @@ function App() {
   const [user] = useAuthState(auth); // Correctly get the user state
 
   const [isSigningUp, setIsSigningUp] = useState(false);
+  const [isChangingProfile, setIsChangingProfile] = useState(false);
 
   return (
     <div className="head-background">
-      <div className="nav-header">
+      <div>
         {user ? <SignOut /> : null}
       </div>
+        
       <div>
-      {user ? (
-          <ChatRoom />
-        ) : (
-          isSigningUp ? (
-            <SignUp setIsSigningUp={setIsSigningUp} />
+        {user ? (
+            isChangingProfile? (
+              <ChooseProfileImage setIsChangingProfile={setIsChangingProfile} />
+            ) : (
+              <ChatRoom setIsChangingProfile={setIsChangingProfile} /> 
+            )
           ) : (
-            <SignIn setIsSigningUp={setIsSigningUp} />
-          )
-        )}
+            isSigningUp ? (
+              <SignUp setIsSigningUp={setIsSigningUp} />
+            ) : (
+              <SignIn setIsSigningUp={setIsSigningUp} />
+            )
+          )}
       </div>
     </div>
   );
@@ -200,14 +206,112 @@ function SignIn({setIsSigningUp}) {
   );
 }
 
+
 function SignOut() {
   return auth.currentUser && (
-    <button className="sign-out" onClick={() => signOut(auth)}>Sign Out</button>
+    <div className="nav-header">
+      <button className="sign-out" onClick={() => signOut(auth)}>Sign Out</button>
+    </div>
   );
 }
 
-function ChatRoom() {
+
+function ChooseProfileImage({ setIsChangingProfile }) {
+  const avatars = [
+    '/avatars/black_pirate.png',
+    '/avatars/boy.png',
+    '/avatars/frida.png',
+    '/avatars/hippie.png',
+    '/avatars/robot.png',
+  ];
+
+  const [selectedAvatar, setSelectedAvatar] = useState(null); // State to hold the selected avatar
+
+  const handleAvatarClick = (avatarUrl) => {
+    setSelectedAvatar(avatarUrl); // Set the selected avatar
+    console.log("Selected avatar:", avatarUrl); // Log for debugging
+  };
+
+  const handleSave = async () => {
+    const user = auth.currentUser; // Get the current user
+
+    if (user && selectedAvatar) {
+      try {
+        // Update the user's profile with the new photo URL
+        await updateProfile(user, {
+          photoURL: selectedAvatar,
+        });
+
+        // Update existing messages with the new avatar URL
+        await updateMessagesWithNewAvatar(selectedAvatar);
+        
+        console.log("Profile photo updated to:", selectedAvatar);
+        // alert("Profile photo updated successfully!");
+
+        setIsChangingProfile(false); // Close the profile image selection
+      } catch (error) {
+        console.error("Error updating profile photo:", error);
+        alert("Failed to update profile photo.");
+      }
+    } else {
+      // alert("Please select an avatar before saving.");
+      setIsChangingProfile(false);
+    }
+  };
+
+  return (
+    <div className="center-div">
+      <div>
+        <h1>Choose your profile image</h1>
+      </div>
+
+      <div className="grid-avatar-container">
+        {avatars.map((avatar, index) => (
+          <img
+            key={index}
+            className="grid-avatar-item"
+            src={avatar}
+            alt={`Avatar ${index + 1}`}
+            onClick={() => handleAvatarClick(avatar)} // Handle image click
+            style={{ border: selectedAvatar === avatar ? '2px solid blue' : 'none' }} // Highlight selected avatar
+          />
+        ))}
+      </div>
+
+      <button onClick={handleSave}>Save</button> {/* Call handleSave on button click */}
+    </div>
+  );
+}
+
+async function updateMessagesWithNewAvatar(newAvatarUrl) {
+  const messagesRef = collection(firestore, 'messages');
+  
+  // Create a query to find all messages sent by the current user
+  const q = query(messagesRef, where('uid', '==', auth.currentUser.uid));
+  
+  try {
+    const querySnapshot = await getDocs(q);
+    
+    // Use batch to perform multiple updates
+    const batch = writeBatch(firestore); // Create a batch instance
+
+    // Update each message with the new avatar URL
+    querySnapshot.forEach((doc) => {
+      const messageRef = doc.ref; // Reference to the message document
+      batch.update(messageRef, { photoURL: newAvatarUrl }); // Update photoURL field
+    });
+
+    await batch.commit(); // Commit the batch update
+    console.log("All messages updated with new avatar URL");
+  } catch (error) {
+    console.error("Error updating messages:", error);
+  }
+}
+
+function ChatRoom({setIsChangingProfile}) {
   const dummy = useRef();
+
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false); // State to toggle dropdown
 
   const messagesRef = collection(firestore, 'messages'); // Use Firestore collection reference
   const q = query(messagesRef, orderBy('createAt'), limit(25)); // Create query
@@ -233,6 +337,10 @@ function ChatRoom() {
     dummy.current.scrollIntoView({ behavior: 'smooth' });
   };
 
+  const toggleDropdown = () => {
+    setIsDropdownOpen(!isDropdownOpen);
+  };
+
   // useEffect to log messages to the console whenever they change
   useEffect(() => {
     if (messages) {
@@ -241,13 +349,16 @@ function ChatRoom() {
   }, [messages]); 
 
   return (<>
-    <main>
+    <div className="messages-container">
+      <main>
 
-      {messages && messages.map(msg => <ChatMessage key={msg.id} message={msg} />)}
+        {messages && messages.map(msg => <ChatMessage key={msg.id} message={msg} />)}
 
-      <span ref={dummy}></span>
+        <span ref={dummy}></span>
 
-    </main>
+      </main>
+    </div>
+    
 
     <form className="form-send" onSubmit={sendMessage}>
       <div className="div-input">
@@ -256,6 +367,15 @@ function ChatRoom() {
         <button className="submit-btn" type="submit" disabled={!formValue}><i className="bi bi-send"></i> {/* Send Icon */}</button>
       </div>
     </form>
+    {/* Dropdown for choosing profile image */}
+    <div className="dropdown nav">
+        <i className="bi bi-gear" onClick={toggleDropdown}></i> {/* Toggle dropdown */}
+        {isDropdownOpen && (
+          <div className="dropdown-content">
+            <a href="#" onClick={() => setIsChangingProfile(true)}>Choose profile image</a>
+          </div>
+        )}
+      </div>
   </>)
 }
 

@@ -27,6 +27,12 @@ html{
   right: 20px;
 }
 
+.nav{
+  position: absolute;
+  top: 20px;
+  left: 20px;
+}
+
 
 .center-div{
   min-height: 100vh;
@@ -110,12 +116,40 @@ span{
 
 /*_______Chat_Room_Style________*/
 
+.messages-container {
+  display: flex;
+  justify-content: center; /* Centering the content horizontally */
+  align-items: center; /* Centering the content vertically */
+  height: 100%; /* Allow the container to take full height */
+  padding: 10px; /* Optional padding for better spacing */
+}
+
 main {
-  margin-top: 10vh;
-  margin-left: 10vh;
-  height: 70vh;
-  width: 80vw;
-  overflow-y: auto; /* Allows scrolling if messages overflow */
+  margin-top: 6vh; /* Distance from the top */
+  height: 85vh; /* Height for scrolling messages */
+  width: 80vw; /* Width of the message container */
+  max-width: 1000px; /* Maximum width to prevent excessive stretching */
+  overflow-y: auto; /* Enables vertical scrolling if needed */
+  border-radius: 8px; /* Optional rounding of corners */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Optional shadow for depth */
+}
+
+/* Custom Scrollbar Styles */
+main::-webkit-scrollbar {
+  width: 8px; /* Width of the scrollbar */
+}
+
+main::-webkit-scrollbar-thumb {
+  background-color: #888; /* Color of the scrollbar thumb */
+  border-radius: 10px; /* Rounded edges */
+}
+
+main::-webkit-scrollbar-thumb:hover {
+  background-color: #555; /* Darker color on hover */
+}
+
+main::-webkit-scrollbar-track {
+  background: none; /* Background of the scrollbar track */
 }
 
 /* Positioning form at the bottom center */
@@ -134,6 +168,7 @@ main {
 .div-input {
   display: flex;
   width: 100%;
+  max-width: 1000px;
 }
 
 /* Styling the input field */
@@ -209,10 +244,82 @@ input {
   background-color: red;
   color: white;
   cursor: pointer;
-  padding: 5px 10px;
+  font-size: 16px;
+  padding: 10px 20px;
   border-radius: 20px;
+  transition: background-color 0.3s ease;
+  border: none;
 }
 
 .sign-out:hover{
   background-color: brown;
+}
+
+.bi-gear{
+  color: white;
+  font-size: 30px; 
+}
+
+.dropdown {
+  display: inline-block;
+}
+
+/* The dropdown content (hidden by default) */
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f9f9f9;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+  border-radius: 5px;
+}
+
+/* Links inside the dropdown */
+.dropdown-content a {
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+}
+
+/* Show the dropdown when triggered */
+.dropdown-content a:hover {
+  background-color: #f1f1f1;
+  border-radius: 5px;
+}
+
+/* Visible dropdown when state is true */
+.dropdown .dropdown-content {
+  display: block;
+}
+
+/* Centering the content */
+.center-div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Container for the avatar grid */
+.grid-avatar-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* Responsive grid layout */
+  gap: 20px; /* Space between grid items */
+  justify-content: center;
+  margin-top: 20px;
+}
+
+/* Individual avatar items */
+.grid-avatar-item {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%; /* Circular avatars */
+  cursor: pointer;
+  transition: transform 0.2s ease; /* Add a transition effect */
+}
+
+.grid-avatar-item:hover {
+  transform: scale(1.1); /* Slight zoom effect on hover */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Add a subtle shadow */
 }
