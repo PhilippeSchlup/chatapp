@@ -359,13 +359,16 @@ function ChatRoom({setIsChangingProfile}) {
         <span ref={dummy}></span>
 
       </main>
-      <form className="form-send" onSubmit={sendMessage}>
-        <div className="div-input">
-          <input value={formValue} onChange={(e) => setFormValue(e.target.value)} placeholder="say something nice" />
+      <div className="form-send">
+        <form onSubmit={sendMessage}>
+          <div className="div-input">
+            <input value={formValue} onChange={(e) => setFormValue(e.target.value)} placeholder="say something nice" />
 
-          <button className="submit-btn" type="submit" disabled={!formValue}><i className="bi bi-send"></i> {/* Send Icon */}</button>
-        </div>
-      </form>
+            <button className="submit-btn" type="submit" disabled={!formValue}><i className="bi bi-send"></i> {/* Send Icon */}</button>
+          </div>
+        </form>
+      </div>
+      
     </div>
     
 
