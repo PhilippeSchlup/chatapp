@@ -219,12 +219,12 @@ function SignOut() {
 
 function ChooseProfileImage({ setIsChangingProfile }) {
   const avatars = [
-    '/avatars/black_pirate.png',
-    '/avatars/boy.png',
-    '/avatars/frida.png',
-    '/avatars/hippie.png',
-    '/avatars/robot.png',
-  ];
+    `${process.env.PUBLIC_URL}/avatars/black_pirate.png`,
+    `${process.env.PUBLIC_URL}/avatars/boy.png`,
+    `${process.env.PUBLIC_URL}/avatars/frida.png`,
+    `${process.env.PUBLIC_URL}/avatars/hippie.png`,
+    `${process.env.PUBLIC_URL}/avatars/robot.png`,
+  ];  
 
   const [selectedAvatar, setSelectedAvatar] = useState(null); // State to hold the selected avatar
 
