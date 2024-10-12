@@ -181,7 +181,7 @@ input {
   padding: 10px;
   border-radius: 20px;
   border: 1px solid #ccc;
-  font-size: 16px;
+  font-size: max(12px, 1.6vw);
   margin-right: 10px;
 }
 
@@ -192,7 +192,7 @@ input {
   background-color: #4CAF50;
   color: white;
   cursor: pointer;
-  font-size: 16px;
+  font-size: max(12px, 1.6vw);
 }
 
 .submit-btn:disabled {
@@ -207,10 +207,11 @@ input {
   margin: 10px;
   padding: 10px;
   border-radius: 20px;
+  min-width: min-content;
   max-width: 60%;
   word-wrap: break-word;
   font-family: Arial, sans-serif;
-  font-size: 16px;
+  font-size: max(12px, 1.6vw);
 }
 
 .message img {
@@ -233,22 +234,15 @@ input {
 
 .message p {
   background-color: inherit;
-  padding: 10px;
   border-radius: 15px;
   margin: 0;
-}
-
-.chat-container {
-  display: flex;
-  flex-direction: column;
-  padding: 10px;
 }
 
 .sign-out{
   background-color: red;
   color: white;
   cursor: pointer;
-  font-size: 16px;
+  font-size: 1.6vw;
   padding: 10px 20px;
   border-radius: 20px;
   transition: background-color 0.3s ease;
@@ -261,7 +255,17 @@ input {
 
 .bi-gear{
   color: white;
-  font-size: 30px; 
+  font-size: max(15px, 3vw); 
+}
+
+@media screen and (min-width: 1000px) {
+  p, .sign-out, input, .submit-btn {
+    font-size: 16px;
+  }
+  .bi-gear{
+    font-size: 30px;
+  }
+
 }
 
 .dropdown {
