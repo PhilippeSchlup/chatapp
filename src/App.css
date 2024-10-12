@@ -44,6 +44,13 @@ html{
   color: white;
 }
 
+.form-column{
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+
 .center-btn {
   display: flex;
   align-items: center;
@@ -51,8 +58,8 @@ html{
 }
 
 .center-div button {
-  margin-top: 10px; /* Space above button */
-  margin-bottom: 10px;
+  /* Space above button */
+  
   padding: 10px 20px; /* Increased padding for better button size */
   background-color: #4285F4; /* Google Blue */
   color: white; /* Text color */
@@ -118,16 +125,17 @@ span{
 
 .messages-container {
   display: flex;
-  justify-content: center; /* Centering the content horizontally */
-  align-items: center; /* Centering the content vertically */
-  height: 100%; /* Allow the container to take full height */
-  padding: 10px; /* Optional padding for better spacing */
+  flex-direction: column;
+  justify-content: flex-end; /* Align form at the bottom */
+  align-items: center;
+  height: 100vh; /* Full viewport height */
+  width: 100%; /* Full width */
+  overflow: hidden;
 }
 
 main {
-  margin-top: 6vh; /* Distance from the top */
-  height: 85vh; /* Height for scrolling messages */
-  width: 80vw; /* Width of the message container */
+  height: 80%; /* Height for scrolling messages */
+  width: 50%; /* Width of the message container */
   max-width: 1000px; /* Maximum width to prevent excessive stretching */
   overflow-y: auto; /* Enables vertical scrolling if needed */
   border-radius: 8px; /* Optional rounding of corners */
@@ -154,14 +162,10 @@ main::-webkit-scrollbar-track {
 
 /* Positioning form at the bottom center */
 .form-send {
-  position: fixed;
-  bottom: 10px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 80vw; /* Adjust width as needed */
+  margin-top: 10px;
+  margin-bottom: 10px;
+  width: 50%; /* Adjust width as needed */
+  max-width: 1000px;
 }
 
 /* Styling for the input container */

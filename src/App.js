@@ -86,7 +86,7 @@ function SignUp({setIsSigningUp}){
         <h1>Create your account</h1>
       </div>
 
-      <form onSubmit={handleSignup}>
+      <form className='form-column' onSubmit={handleSignup}>
         <div>
           <input
             type="email"
@@ -160,26 +160,27 @@ function SignIn({setIsSigningUp}) {
         <h1>Welcome to Late Chat</h1>
       </div>
 
-      <form onSubmit={handleEmailSignIn}> {/* Email/password form */}
-        <div>
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)} // Update email state
-            placeholder="Email"
-            required
-          />
-        </div>
-        
-        <div>
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)} // Update password state
-            placeholder="Password"
-            required
-          />
-        </div>
+      <form className='form-column' onSubmit={handleEmailSignIn}> {/* Email/password form */}
+          <div>
+             <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)} // Update email state
+              placeholder="Email"
+              required
+            />
+          </div>
+         
+          <div>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)} // Update password state
+              placeholder="Password"
+              required
+            />
+          </div>
+      
         <div className="center-btn">
           <button type="submit">Sign In</button>
         </div>
@@ -357,25 +358,25 @@ function ChatRoom({setIsChangingProfile}) {
         <span ref={dummy}></span>
 
       </main>
+      <form className="form-send" onSubmit={sendMessage}>
+        <div className="div-input">
+          <input value={formValue} onChange={(e) => setFormValue(e.target.value)} placeholder="say something nice" />
+
+          <button className="submit-btn" type="submit" disabled={!formValue}><i className="bi bi-send"></i> {/* Send Icon */}</button>
+        </div>
+      </form>
     </div>
     
 
-    <form className="form-send" onSubmit={sendMessage}>
-      <div className="div-input">
-        <input value={formValue} onChange={(e) => setFormValue(e.target.value)} placeholder="say something nice" />
-
-        <button className="submit-btn" type="submit" disabled={!formValue}><i className="bi bi-send"></i> {/* Send Icon */}</button>
-      </div>
-    </form>
     {/* Dropdown for choosing profile image */}
     <div className="dropdown nav">
-        <i className="bi bi-gear" onClick={toggleDropdown}></i> {/* Toggle dropdown */}
-        {isDropdownOpen && (
-          <div className="dropdown-content">
-            <a href="#" onClick={() => setIsChangingProfile(true)}>Choose profile image</a>
-          </div>
-        )}
-      </div>
+      <i className="bi bi-gear" onClick={toggleDropdown}></i> {/* Toggle dropdown */}
+      {isDropdownOpen && (
+        <div className="dropdown-content">
+          <a href="#" onClick={() => setIsChangingProfile(true)}>Choose profile image</a>
+        </div>
+      )}
+    </div>
   </>)
 }
 
