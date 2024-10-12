@@ -135,7 +135,7 @@ span{
 
 main {
   height: 80%; /* Height for scrolling messages */
-  width: 60%; /* Width of the message container */
+  width: 70%; /* Width of the message container */
   max-width: 1000px; /* Maximum width to prevent excessive stretching */
   overflow-y: auto; /* Enables vertical scrolling if needed */
   border-radius: 8px; /* Optional rounding of corners */
@@ -166,7 +166,7 @@ main::-webkit-scrollbar-track {
   justify-content: center;
   margin-top: 10px;
   margin-bottom: 10px;
-  width: 60%; /* Full width for form send */
+  width: 70%; /* Full width for form send */
   max-width: 1000px;
 }
 
@@ -238,8 +238,9 @@ input {
   margin: 10px;
   padding: 10px;
   border-radius: 20px;
+  width: fit-content;
   min-width: min-content;
-  max-width: 60%;
+  max-width: 50%;
   word-wrap: break-word;
   font-family: Arial, sans-serif;
   font-size: max(12px, 1.6vw);
