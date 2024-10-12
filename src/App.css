@@ -240,8 +240,9 @@ input {
   border-radius: 20px;
   width: fit-content;
   min-width: min-content;
-  max-width: 50%;
-  word-wrap: break-word;
+  max-width: 60%;
+  
+  word-break: break-all;
   font-family: Arial, sans-serif;
   font-size: max(12px, 1.6vw);
 }
