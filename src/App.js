@@ -392,6 +392,7 @@ function ChatMessage(props) {
         <img
           src={photoURL || `${process.env.PUBLIC_URL}/avatars/default_avatar.png`}
           alt="User Avatar"
+          onError={(e) => { e.target.src =`${process.env.PUBLIC_URL}/avatars/default_avatar.png`; }}
         />
         <p>{text}</p>
       </div>
