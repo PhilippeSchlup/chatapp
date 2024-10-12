@@ -193,7 +193,7 @@ function SignIn({setIsSigningUp}) {
       
       <div>
         <button className="signGoogle" onClick={signInWithGoogle}>Sign in with Google
-          <img className="google-icon" src="/google.png" alt="Google Icon" />
+          <img className="google-icon" src={`${process.env.PUBLIC_URL}/google.png`} alt="Google Icon" />
         </button>
       </div>
 
@@ -224,6 +224,7 @@ function ChooseProfileImage({ setIsChangingProfile }) {
     `${process.env.PUBLIC_URL}/avatars/frida.png`,
     `${process.env.PUBLIC_URL}/avatars/hippie.png`,
     `${process.env.PUBLIC_URL}/avatars/robot.png`,
+    `${process.env.PUBLIC_URL}/avatars/default_avatar.png`,
   ];  
 
   const [selectedAvatar, setSelectedAvatar] = useState(null); // State to hold the selected avatar
@@ -385,12 +386,17 @@ function ChatMessage(props) {
 
   const messageClass = uid === auth.currentUser.uid ? 'sent' : 'received';
 
-  return (<>
-    <div className={`message ${messageClass}`}>
-      <img src={photoURL || 'https://api.adorable.io/avatars/23/abott@adorable.png'} />
-      <p>{text}</p>
-    </div>
-  </>)
+  return (
+    <>
+      <div className={`message ${messageClass}`}>
+        <img
+          src={photoURL || `${process.env.PUBLIC_URL}/avatars/default_avatar.png`}
+          alt="User Avatar"
+        />
+        <p>{text}</p>
+      </div>
+    </>
+  );
 }
 
 export default App;

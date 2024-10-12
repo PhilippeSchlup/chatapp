@@ -309,10 +309,15 @@ input {
   align-items: center;
 }
 
+.center-div button{
+  margin-top: 20px;
+}
+
 /* Container for the avatar grid */
 .grid-avatar-container {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); /* Responsive grid layout */
+  grid-template-columns: repeat(3, 1fr); /* Create 3 equal columns */
+  grid-auto-rows: 1fr; /* Ensure each row takes equal space */
   gap: 20px; /* Space between grid items */
   justify-content: center;
   margin-top: 20px;
