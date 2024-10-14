@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import './App.css';
 import { initializeApp } from 'firebase/app';
 import { getAuth, updateProfile, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'; // Import auth functions
-import { getFirestore, where, collection, query, orderBy, limit, addDoc, writeBatch, getDocs, serverTimestamp } from 'firebase/firestore'; // Import Firestore functions
+import { getFirestore, where, collection, arrayUnion, query, orderBy, limit, doc, updateDoc, setDoc, getDoc, addDoc, writeBatch, getDocs, serverTimestamp } from 'firebase/firestore'; // Import Firestore functions
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
 import 'bootstrap-icons/font/bootstrap-icons.css';
@@ -54,7 +54,8 @@ function App() {
   );
 }
 
-function SignUp({setIsSigningUp}){
+function SignUp({ setIsSigningUp }) {
+  const [name, setName] = useState('');  // New state for the name field
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -64,21 +65,53 @@ function SignUp({setIsSigningUp}){
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match");
+      setError('Passwords do not match');
       return;
     }
 
     try {
-      await createUserWithEmailAndPassword(auth, email, password);
+      // Create user with email and password
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      console.log('User created:', user);  // Logging the created user object
+
+      // Save user to Firestore
+      await saveUserToFirestore(user);
+      
+      // Reset form fields
+      setName('');
       setEmail('');
       setPassword('');
       setConfirmPassword('');
       setError('');
+      console.log('User saved to Firestore successfully');  // Log success
+
     } catch (error) {
-      setError(error.message);
+      console.error('Error during signup:', error);  // Log the error
+      setError(error.message);  // Display the error to the user
     }
   };
 
+  // Save user information to Firestore
+  const saveUserToFirestore = async (user) => {
+    try {
+      const userRef = doc(firestore, 'users', user.uid);
+  
+      // Set user data, including the new 'name' field
+      await setDoc(userRef, {
+        uid: user.uid,
+        email: user.email,
+        name: name,  // Save the user's name
+        photoURL: user.photoURL || `${process.env.PUBLIC_URL}/avatars/default_avatar.png`,  // Default avatar
+        contacts: [] // Empty contacts array
+      });
+
+    } catch (error) {
+      console.error('Error saving user to Firestore:', error);  // Log Firestore save error
+      setError('Error saving user data to Firestore');  // Set Firestore error message
+    }
+  };
 
   return (
     <div className="center-div">
@@ -86,7 +119,16 @@ function SignUp({setIsSigningUp}){
         <h1>Create your account</h1>
       </div>
 
-      <form className='form-column' onSubmit={handleSignup}>
+      <form className="form-column" onSubmit={handleSignup}>
+        <div>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Your Name"
+            required
+          />
+        </div>
         <div>
           <input
             type="email"
@@ -122,9 +164,7 @@ function SignUp({setIsSigningUp}){
 
       <div className="signup-link">
         Already have an account?{' '}
-        <span onClick={() => setIsSigningUp(false)}>
-          Sign In here
-        </span>
+        <span onClick={() => setIsSigningUp(false)}>Sign In here</span>
       </div>
     </div>
   );
@@ -244,19 +284,17 @@ function ChooseProfileImage({ setIsChangingProfile }) {
           photoURL: selectedAvatar,
         });
 
-        // Update existing messages with the new avatar URL
-        await updateMessagesWithNewAvatar(selectedAvatar);
+        // Update Firestore user document with the new photo URL
+        await updateFirestoreUserPhoto(user.uid, selectedAvatar);
         
         console.log("Profile photo updated to:", selectedAvatar);
-        // alert("Profile photo updated successfully!");
-
         setIsChangingProfile(false); // Close the profile image selection
       } catch (error) {
         console.error("Error updating profile photo:", error);
         alert("Failed to update profile photo.");
       }
     } else {
-      // alert("Please select an avatar before saving.");
+      alert("Please select an avatar before saving.");
       setIsChangingProfile(false);
     }
   };
@@ -285,29 +323,186 @@ function ChooseProfileImage({ setIsChangingProfile }) {
   );
 }
 
-async function updateMessagesWithNewAvatar(newAvatarUrl) {
-  const messagesRef = collection(firestore, 'messages');
-  
-  // Create a query to find all messages sent by the current user
-  const q = query(messagesRef, where('uid', '==', auth.currentUser.uid));
-  
+// New function to update user's Firestore document with the new photo URL
+async function updateFirestoreUserPhoto(uid, newPhotoUrl) {
+  const userDocRef = doc(firestore, 'users', uid); // Reference to the user's document
+
   try {
-    const querySnapshot = await getDocs(q);
-    
-    // Use batch to perform multiple updates
-    const batch = writeBatch(firestore); // Create a batch instance
-
-    // Update each message with the new avatar URL
-    querySnapshot.forEach((doc) => {
-      const messageRef = doc.ref; // Reference to the message document
-      batch.update(messageRef, { photoURL: newAvatarUrl }); // Update photoURL field
-    });
-
-    await batch.commit(); // Commit the batch update
-    console.log("All messages updated with new avatar URL");
+    await updateDoc(userDocRef, { photoURL: newPhotoUrl }); // Update the photoURL field in Firestore
+    console.log("User document updated with new photo URL");
   } catch (error) {
-    console.error("Error updating messages:", error);
+    console.error("Error updating user document:", error);
   }
+}
+
+function Contacts({ actualUserId }) {
+  const [contacts, setContacts] = useState([]);
+
+  // Fetch user's contacts when the component mounts
+  useEffect(() => {
+    const fetchContactsUids = async () => {
+      try {
+        const userDocRef = doc(firestore, 'users', actualUserId);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          const contactUids = userData.contacts || [];
+
+          // Fetch the contact data (name, photoURL) for each contact uid
+          const contactsData = await Promise.all(
+            contactUids.map(async (contactUid) => {
+              const contactDocRef = doc(firestore, 'users', contactUid);
+              const contactDoc = await getDoc(contactDocRef);
+              if (contactDoc.exists()) {
+                return { uid: contactUid, ...contactDoc.data() };
+              } else {
+                return null; // Return null if the contact doesn't exist
+              }
+            })
+          );
+
+          // Filter out any null contacts (in case a contact doesn't exist)
+          setContacts(contactsData.filter(contact => contact !== null));
+        }
+      } catch (error) {
+        console.error('Error fetching contacts:', error);
+      }
+    };
+
+    if (actualUserId) {
+      fetchContactsUids();
+    }
+  }, [actualUserId]);
+
+  return (
+    <div className="contact-list">
+      {contacts.length > 0 ? (
+        contacts.map((contact) => (
+          <div key={contact.uid} className="contact">
+            <img
+              src={contact.photoURL || `${process.env.PUBLIC_URL}/avatars/default_avatar.png`}
+              alt="User Avatar"
+              onError={(e) => { e.target.src = `${process.env.PUBLIC_URL}/avatars/default_avatar.png`; }}
+            />
+            <p>{contact.name}</p>
+          </div>
+        ))
+      ) : (
+        <p>No contacts yet</p>
+      )}
+    </div>
+  );
+}
+
+function FriendSearch({ currentUserUid }) {
+  const [searchInput, setSearchInput] = useState('');
+  const [foundUser, setFoundUser] = useState(null);
+  const [error, setError] = useState('');
+  const [contacts, setContacts] = useState([]); // Track the user's contacts
+
+  // Fetch user's contacts when the component mounts
+  useEffect(() => {
+    const fetchContacts = async () => {
+      try {
+        const userDocRef = doc(firestore, 'users', currentUserUid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          setContacts(userData.contacts || []); // Set contacts from the user document
+        }
+      } catch (error) {
+        console.error('Error fetching contacts:', error);
+      }
+    };
+
+    if (currentUserUid) {
+      fetchContacts();
+    }
+  }, [currentUserUid]);
+
+  const handleSearch = async (e) => {
+    e.preventDefault();
+
+    // Query Firestore for a user with the entered username or email
+    const usersRef = collection(firestore, 'users');
+    const q = query(usersRef, where('name', '==', searchInput));
+
+    try {
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        querySnapshot.forEach((doc) => {
+          setFoundUser({ uid: doc.id, ...doc.data() });
+        });
+        setError('');
+      } else {
+        setFoundUser(null);
+        setError('User not found.');
+      }
+    } catch (err) {
+      console.error('Error finding user:', err);
+      setError('An error occurred while searching for the user.');
+    }
+  };
+
+  const handleAddFriend = async () => {
+    if (foundUser) {
+      const userContactsRef = doc(firestore, 'users', currentUserUid); // Reference to the current user's document
+      try {
+        // Update the contacts array by adding the friend's UID
+        await updateDoc(userContactsRef, {
+          contacts: arrayUnion(foundUser.uid) // Use arrayUnion directly from Firestore
+        });
+        setError(''); // Clear any existing error messages
+        alert('Friend added successfully!'); // Notify user of success
+      } catch (err) {
+        console.error('Error adding friend:', err); // Log the error for debugging
+        setError('Failed to add friend.'); // Set error message to state
+      }
+    } else {
+      setError('No user found.'); // Handle case where no user was found
+    }
+  };
+
+  const isUserAdded = foundUser && contacts.includes(foundUser.uid);
+
+  return (
+    <div>
+      <form onSubmit={handleSearch}>
+        <div>
+          <input
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            placeholder="Find a friend"
+          />
+          <button type="submit" disabled={!searchInput}>Search</button>
+        </div>
+      </form>
+
+      {foundUser ? (
+        <div className="found-user">
+          <img
+            src={foundUser.photoURL || `${process.env.PUBLIC_URL}/avatars/default_avatar.png`}
+            alt={`${foundUser.name}'s avatar`}
+            style={{marginRight:'10px', width: '40px', height: '40px', borderRadius: '50%' }} // Adjust styles as needed
+          />
+          {currentUserUid === foundUser.uid ? (
+            <p style={{ fontWeight:'bold', color: 'red'}}>You</p>
+          ) : isUserAdded ? (
+            <p>{foundUser.name} <span style={{ fontWeight: 'bold', color: 'green' }}>(Added)</span></p>
+          ) : (
+            <>
+              <p>{foundUser.name}</p>
+              <button onClick={handleAddFriend}>Add Friend</button>
+            </>
+          )}
+        </div>
+      ) : (
+        error && <p className="error">{error}</p>
+      )}
+    </div>
+  );
 }
 
 function ChatRoom({setIsChangingProfile}) {
@@ -321,6 +516,9 @@ function ChatRoom({setIsChangingProfile}) {
   const [messages] = useCollectionData(q, { idField: 'id' });
 
   const [formValue, setFormValue] = useState('');
+
+  // Get current user's uid
+  const currentUserUid = auth.currentUser.uid; 
 
   const sendMessage = async (e) => {
     e.preventDefault();
@@ -350,15 +548,24 @@ function ChatRoom({setIsChangingProfile}) {
     }
   }, [messages]); 
 
+
   return (<>
     <div className="messages-container">
-      <main>
+      <div className="container">
+        <div className="chats">
+          <FriendSearch currentUserUid={currentUserUid} />
 
-        {messages && messages.map(msg => <ChatMessage key={msg.id} message={msg} />)}
+          <Contacts actualUserId={currentUserUid} />
+        </div>
+        <main>
 
-        <span ref={dummy}></span>
+          {messages && messages.map(msg => <ChatMessage key={msg.id} message={msg} />)}
 
-      </main>
+          <span ref={dummy}></span>
+
+        </main>
+      </div>
+     
       <div className="form-send">
         <form onSubmit={sendMessage}>
           <div className="div-input">
@@ -385,21 +592,55 @@ function ChatRoom({setIsChangingProfile}) {
 }
 
 function ChatMessage(props) {
-  const { text, uid, photoURL } = props.message;
+  const { text, uid } = props.message;
+
+  // State to hold the user's photoURL and loading state
+  const [photoURL, setPhotoURL] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchUserPhotoURL = async () => {
+      console.log('Fetching photo for UID:', uid); // Log the UID being fetched
+
+      try {
+        const userDocRef = doc(firestore, 'users', uid);
+        const userDoc = await getDoc(userDocRef);
+
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          console.log('User Data:', userData); // Log user data for debugging
+          setPhotoURL(userData.photoURL); // Get the photoURL from the user's document
+        } else {
+          console.error('No such user document for UID:', uid); // Improved logging
+        }
+      } catch (error) {
+        console.error('Error fetching user photo URL:', error);
+      } finally {
+        setLoading(false); // Set loading to false after the fetch
+      }
+    };
+
+    fetchUserPhotoURL();
+  }, [uid]); // Depend on uid so it fetches when uid changes
 
   const messageClass = uid === auth.currentUser.uid ? 'sent' : 'received';
 
   return (
-    <>
-      <div className={`message ${messageClass}`}>
+    <div className={`message ${messageClass}`}>
+      {loading ? ( // Show a loading indicator while fetching the photo
+        <div className="loading">Loading...</div>
+      ) : (
         <img
           src={photoURL || `${process.env.PUBLIC_URL}/avatars/default_avatar.png`}
           alt="User Avatar"
-          onError={(e) => { e.target.src =`${process.env.PUBLIC_URL}/avatars/default_avatar.png`; }}
+          onError={(e) => { 
+            e.target.src = `${process.env.PUBLIC_URL}/avatars/default_avatar.png`; 
+          }}
+          style={{ width: '40px', height: '40px', borderRadius: '50%' }} // Adjust styles as needed
         />
-        <p>{text}</p>
-      </div>
-    </>
+      )}
+      <p>{text}</p>
+    </div>
   );
 }
 

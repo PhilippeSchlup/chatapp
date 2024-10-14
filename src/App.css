@@ -132,9 +132,94 @@ span{
   width: 100%; /* Full width */
   overflow: hidden;
 }
+.container{
+  display: flex;
+  justify-items: center;
+  width: 100%;
+  height: 100%;
+}
+
+.chats{
+  margin-top: 80px;
+  height: 80%;
+  width: 15%;
+  display: flex;
+  justify-items: center;
+  flex-direction: column;
+}
+
+.chats input{
+  width: 50%;
+}
+
+.chats button{
+  border: none;
+  border-radius: 20px;
+  padding: 10px 15px;
+  font-size: 16px;
+  cursor: pointer;
+  background-color: blue;
+  color: white;
+}
+
+.chats button:disabled {
+  background-color: #ccc;
+  cursor: not-allowed;
+}
+
+.found-user{
+  border-radius: 20px;
+  background-color: white;
+  display: flex;
+  align-items: center;
+  justify-items: center;
+  font-size: 12px;
+  margin-top: 10px;
+  padding: 0;
+}
+
+.found-user p{
+  margin: 0;
+  font-size: 16px;
+}
+
+.found-user button{
+  margin-left: 10px;
+  margin-right: 10px;
+  padding: 3px 6px;
+  min-height: max-content;
+  color: #4CAF50;
+}
+
+.error{
+  color: red;
+}
+
+.contact {
+  display: flex;
+  align-items: center;
+  margin-top: 10px;
+  border: none;
+  border-radius: 20px;
+  background-color: white;
+}
+
+.contact img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  margin-right: 10px;
+}
+
+.contact p {
+  margin: 0;
+  font-size: 16px;
+  color: #0056b3;
+}
 
 main {
-  height: 80%; /* Height for scrolling messages */
+  margin-top: 80px;
+  height: auto; /* Height for scrolling messages */
   width: 70%; /* Width of the message container */
   max-width: 1000px; /* Maximum width to prevent excessive stretching */
   overflow-y: auto; /* Enables vertical scrolling if needed */
@@ -292,7 +377,7 @@ input {
 }
 
 @media screen and (min-width: 1000px) {
-  p, .sign-out, input, .submit-btn {
+  .message p, .sign-out, input, .submit-btn {
     font-size: 16px;
   }
   .bi-gear{
