@@ -93,20 +93,20 @@ function SignUp({ setIsSigningUp }) {
     }
   };
 
-  // Save user information to Firestore
   const saveUserToFirestore = async (user) => {
     try {
       const userRef = doc(firestore, 'users', user.uid);
   
-      // Set user data, including the new 'name' field
+      // Set user data, including the lowercase 'nameLowerCase' field
       await setDoc(userRef, {
         uid: user.uid,
         email: user.email,
-        name: name,  // Save the user's name
+        name: name,  // Save the original name
+        nameLowerCase: name.toLowerCase(),  // Save the lowercase version of the name for case-insensitive search
         photoURL: user.photoURL || `${process.env.PUBLIC_URL}/avatars/default_avatar.png`,  // Default avatar
         contacts: [] // Empty contacts array
       });
-
+  
     } catch (error) {
       console.error('Error saving user to Firestore:', error);  // Log Firestore save error
       setError('Error saving user data to Firestore');  // Set Firestore error message
@@ -397,7 +397,7 @@ function Contacts({ actualUserId }) {
 
 function FriendSearch({ currentUserUid }) {
   const [searchInput, setSearchInput] = useState('');
-  const [foundUser, setFoundUser] = useState(null);
+  const [foundUsers, setFoundUsers] = useState([]); // Allow multiple results
   const [error, setError] = useState('');
   const [contacts, setContacts] = useState([]); // Track the user's contacts
 
@@ -425,20 +425,30 @@ function FriendSearch({ currentUserUid }) {
   const handleSearch = async (e) => {
     e.preventDefault();
 
-    // Query Firestore for a user with the entered username or email
+    if (!searchInput) return;
+
     const usersRef = collection(firestore, 'users');
-    const q = query(usersRef, where('name', '==', searchInput));
+    const normalizedSearchInput = searchInput.toLowerCase(); // Normalize the input
+
+    // Use Firestore's startAt and endAt for partial matching
+    const q = query(
+      usersRef,
+      where('nameLowerCase', '>=', normalizedSearchInput),  // nameLowerCase should exist in Firestore
+      where('nameLowerCase', '<=', normalizedSearchInput + '\uf8ff') // End at the closest possible match
+    );
 
     try {
       const querySnapshot = await getDocs(q);
       if (!querySnapshot.empty) {
+        const users = [];
         querySnapshot.forEach((doc) => {
-          setFoundUser({ uid: doc.id, ...doc.data() });
+          users.push({ uid: doc.id, ...doc.data() });
         });
+        setFoundUsers(users);
         setError('');
       } else {
-        setFoundUser(null);
-        setError('User not found.');
+        setFoundUsers([]);
+        setError('No users found.');
       }
     } catch (err) {
       console.error('Error finding user:', err);
@@ -446,13 +456,13 @@ function FriendSearch({ currentUserUid }) {
     }
   };
 
-  const handleAddFriend = async () => {
-    if (foundUser) {
+  const handleAddFriend = async (user) => {
+    if (user) {
       const userContactsRef = doc(firestore, 'users', currentUserUid); // Reference to the current user's document
       try {
         // Update the contacts array by adding the friend's UID
         await updateDoc(userContactsRef, {
-          contacts: arrayUnion(foundUser.uid) // Use arrayUnion directly from Firestore
+          contacts: arrayUnion(user.uid) // Use arrayUnion to add UID to the contact list
         });
         setError(''); // Clear any existing error messages
         alert('Friend added successfully!'); // Notify user of success
@@ -460,12 +470,10 @@ function FriendSearch({ currentUserUid }) {
         console.error('Error adding friend:', err); // Log the error for debugging
         setError('Failed to add friend.'); // Set error message to state
       }
-    } else {
-      setError('No user found.'); // Handle case where no user was found
     }
   };
 
-  const isUserAdded = foundUser && contacts.includes(foundUser.uid);
+  const isUserAdded = (userUid) => contacts.includes(userUid); // Check if the user is already in contacts
 
   return (
     <div>
@@ -480,24 +488,26 @@ function FriendSearch({ currentUserUid }) {
         </div>
       </form>
 
-      {foundUser ? (
-        <div className="found-user">
-          <img
-            src={foundUser.photoURL || `${process.env.PUBLIC_URL}/avatars/default_avatar.png`}
-            alt={`${foundUser.name}'s avatar`}
-            style={{marginRight:'10px', width: '40px', height: '40px', borderRadius: '50%' }} // Adjust styles as needed
-          />
-          {currentUserUid === foundUser.uid ? (
-            <p style={{ fontWeight:'bold', color: 'red'}}>You</p>
-          ) : isUserAdded ? (
-            <p>{foundUser.name} <span style={{ fontWeight: 'bold', color: 'green' }}>(Added)</span></p>
-          ) : (
-            <>
-              <p>{foundUser.name}</p>
-              <button onClick={handleAddFriend}>Add Friend</button>
-            </>
-          )}
-        </div>
+      {foundUsers.length > 0 ? (
+        foundUsers.map((user) => (
+          <div className="found-user" key={user.uid}>
+            <img
+              src={user.photoURL || `${process.env.PUBLIC_URL}/avatars/default_avatar.png`}
+              alt={`${user.name}'s avatar`}
+              style={{marginRight:'10px', width: '40px', height: '40px', borderRadius: '50%' }} // Adjust styles as needed
+            />
+            {currentUserUid === user.uid ? (
+              <p style={{ fontWeight:'bold', color: 'red'}}>You</p>
+            ) : isUserAdded(user.uid) ? (
+              <p>{user.name} <span style={{ fontWeight: 'bold', color: 'green' }}>(Added)</span></p>
+            ) : (
+              <>
+                <p>{user.name}</p>
+                <button onClick={() => handleAddFriend(user)}>Add Friend</button>
+              </>
+            )}
+          </div>
+        ))
       ) : (
         error && <p className="error">{error}</p>
       )}
