@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import './App.css';
 import { initializeApp } from 'firebase/app';
-import { getAuth, updateProfile, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'; // Import auth functions
+import { getAuth, updateProfile, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'; // Import auth functions
 import { getFirestore, where, collection, arrayUnion, arrayRemove, query, orderBy, limit, doc, updateDoc, setDoc, getDoc, addDoc, writeBatch, getDocs, serverTimestamp } from 'firebase/firestore'; // Import Firestore functions
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
@@ -171,29 +171,53 @@ function SignUp({ setIsSigningUp }) {
   );
 }
 
-function SignIn({setIsSigningUp}) {
+function SignIn({ setIsSigningUp }) {
   const provider = new GoogleAuthProvider();
-  const [email, setEmail] = useState(''); // State for email
-  const [password, setPassword] = useState(''); // State for password
-  const [error, setError] = useState(''); // State for error messages
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
 
-  const signInWithGoogle = () => {
-    signInWithPopup(auth, provider); // Correctly sign in with Google
-  };
-
-  const handleEmailSignIn = async (e) => {
-    e.preventDefault(); // Prevent the default form submission
-
+  const signInWithGoogle = async () => {
     try {
-      await signInWithEmailAndPassword(auth, email, password); // Sign in with email and password
-      setEmail(''); // Clear email input
-      setPassword(''); // Clear password input
+      const result = await signInWithPopup(auth, provider);
+      const user = result.user;
+  
+      // Reference to the Firestore collection
+      const userRef = doc(firestore, 'users', user.uid);
+      
+      // Check if user already exists
+      const userDoc = await getDoc(userRef); // Use getDoc instead of userRef.get()
+  
+      if (!userDoc.exists()) {
+        // If user doesn't exist, create a new user document
+        const name = user.displayName || "Unknown"; 
+        await setDoc(userRef, {
+          uid: user.uid,
+          email: user.email,
+          name: name,
+          nameLowerCase: name.toLowerCase(),
+          photoURL: user.photoURL || `${process.env.PUBLIC_URL}/avatars/default_avatar.png`,
+          contacts: [],
+          friendRequests: [],
+        });
+      }
     } catch (error) {
-      console.error("Error signing in with email: ", error);
-      setError(error.message); // Set error message
+      console.error("Error signing in with Google: ", error);
+      setError(error.message);
     }
   };
 
+  const handleEmailSignIn = async (e) => {
+    e.preventDefault();
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      setEmail('');
+      setPassword('');
+    } catch (error) {
+      console.error("Error signing in with email: ", error);
+      setError(error.message);
+    }
+  };
 
   return (
     <div className="center-div">
@@ -201,39 +225,38 @@ function SignIn({setIsSigningUp}) {
         <h1>Welcome to Late Chat</h1>
       </div>
 
-      <form className='form-column' onSubmit={handleEmailSignIn}> {/* Email/password form */}
-          <div>
-             <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)} // Update email state
-              placeholder="Email"
-              required
-            />
-          </div>
-         
-          <div>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)} // Update password state
-              placeholder="Password"
-              required
-            />
-          </div>
-      
+      <form className='form-column' onSubmit={handleEmailSignIn}>
+        <div>
+          <input
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="Email"
+            required
+          />
+        </div>
+
+        <div>
+          <input
+            type="password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="Password"
+            required
+          />
+        </div>
+
         <div className="center-btn">
           <button type="submit">Sign In</button>
         </div>
-        {error && <p style={{ color: 'red' }}>{error}</p>} {/* Display error message */}
+        {error && <p style={{ color: 'red' }}>{error}</p>}
       </form>
 
-      <div className="divider">
-        or
-      </div>
-      
+      <div className="divider">or</div>
+
       <div>
-        <button className="signGoogle" onClick={signInWithGoogle}>Sign in with Google
+        <button className="signGoogle" onClick={signInWithGoogle}>
+          Sign in with Google
           <img className="google-icon" src={`${process.env.PUBLIC_URL}/google.png`} alt="Google Icon" />
         </button>
       </div>
