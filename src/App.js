@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import './App.css';
 import { initializeApp } from 'firebase/app';
 import { getAuth, updateProfile, createUserWithEmailAndPassword, signInWithEmailAndPassword, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth'; // Import auth functions
-import { getFirestore, where, collection, arrayUnion, query, orderBy, limit, doc, updateDoc, setDoc, getDoc, addDoc, writeBatch, getDocs, serverTimestamp } from 'firebase/firestore'; // Import Firestore functions
+import { getFirestore, where, collection, arrayUnion, arrayRemove, query, orderBy, limit, doc, updateDoc, setDoc, getDoc, addDoc, writeBatch, getDocs, serverTimestamp } from 'firebase/firestore'; // Import Firestore functions
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { useCollectionData } from 'react-firebase-hooks/firestore';
 import 'bootstrap-icons/font/bootstrap-icons.css';
@@ -104,7 +104,8 @@ function SignUp({ setIsSigningUp }) {
         name: name,  // Save the original name
         nameLowerCase: name.toLowerCase(),  // Save the lowercase version of the name for case-insensitive search
         photoURL: user.photoURL || `${process.env.PUBLIC_URL}/avatars/default_avatar.png`,  // Default avatar
-        contacts: [] // Empty contacts array
+        contacts: [],
+        friendRequests: [],
       });
   
     } catch (error) {
@@ -335,7 +336,7 @@ async function updateFirestoreUserPhoto(uid, newPhotoUrl) {
   }
 }
 
-function Contacts({ actualUserId }) {
+function Contacts({ actualUserId, onContactClick }) {
   const [contacts, setContacts] = useState([]);
 
   // Fetch user's contacts when the component mounts
@@ -379,7 +380,7 @@ function Contacts({ actualUserId }) {
     <div className="contact-list">
       {contacts.length > 0 ? (
         contacts.map((contact) => (
-          <div key={contact.uid} className="contact">
+          <div onClick={() => onContactClick(contact.uid)} key={contact.uid} className="contact">
             <img
               src={contact.photoURL || `${process.env.PUBLIC_URL}/avatars/default_avatar.png`}
               alt="User Avatar"
@@ -458,20 +459,21 @@ function FriendSearch({ currentUserUid }) {
 
   const handleAddFriend = async (user) => {
     if (user) {
-      const userContactsRef = doc(firestore, 'users', currentUserUid); // Reference to the current user's document
+      const recipientRef = doc(firestore, 'users', user.uid); // Reference to the recipient user's document
       try {
-        // Update the contacts array by adding the friend's UID
-        await updateDoc(userContactsRef, {
-          contacts: arrayUnion(user.uid) // Use arrayUnion to add UID to the contact list
+        // Update the recipient's document by adding the current user's UID to friendRequests
+        await updateDoc(recipientRef, {
+          friendRequests: arrayUnion(currentUserUid) // Add current user's UID to friend requests
         });
         setError(''); // Clear any existing error messages
-        alert('Friend added successfully!'); // Notify user of success
+        alert('Friend request sent successfully!'); // Notify user of success
       } catch (err) {
-        console.error('Error adding friend:', err); // Log the error for debugging
-        setError('Failed to add friend.'); // Set error message to state
+        console.error('Error sending friend request:', err); // Log the error for debugging
+        setError('Failed to send friend request.'); // Set error message to state
       }
     }
   };
+  
 
   const isUserAdded = (userUid) => contacts.includes(userUid); // Check if the user is already in contacts
 
@@ -515,19 +517,109 @@ function FriendSearch({ currentUserUid }) {
   );
 }
 
-function ChatRoom({setIsChangingProfile}) {
+const FriendRequests = ({ currentUserUid }) => {
+  const [friendRequests, setFriendRequests] = useState([]);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    const fetchFriendRequests = async () => {
+      const userDocRef = doc(firestore, 'users', currentUserUid);
+      const userDoc = await getDoc(userDocRef);
+  
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        const requestUids = userData.friendRequests || [];
+        
+        if (requestUids.length > 0) {
+          // Fetch users in batch using a query with "where" clause
+          const usersQuery = query(collection(firestore, 'users'), where('uid', 'in', requestUids));
+          const querySnapshot = await getDocs(usersQuery);
+          
+          const requestDetails = querySnapshot.docs.map(doc => ({ uid: doc.id, ...doc.data() }));
+          console.log("Requests ", requestDetails);
+          setFriendRequests(requestDetails); // Set friend requests with user details
+        }
+      }
+    };
+  
+    fetchFriendRequests();
+  }, [currentUserUid]);
+  
+  // Handle accept and reject updates
+  const handleAcceptRequest = async (requestUid) => {
+    const userRef = doc(firestore, 'users', currentUserUid);
+    const requesterRef = doc(firestore, 'users', requestUid);
+  
+    try {
+      await updateDoc(userRef, {
+        contacts: arrayUnion(requestUid),
+        friendRequests: arrayRemove(requestUid)
+      });
+  
+      await updateDoc(requesterRef, {
+        contacts: arrayUnion(currentUserUid)
+      });
+  
+      setFriendRequests((prev) => prev.filter((request) => request.uid !== requestUid));
+      alert('Friend request accepted!');
+    } catch (err) {
+      console.error('Error accepting friend request:', err);
+      setError('Failed to accept the friend request.');
+    }
+  };
+  
+
+  // Handle rejecting a friend request
+  const handleRejectRequest = async (requestUid) => {
+    const userRef = doc(firestore, 'users', currentUserUid);
+
+    try {
+      // Remove the request from friendRequests
+      await updateDoc(userRef, {
+        friendRequests: arrayRemove(requestUid)
+      });
+
+      // Update the UI by removing the rejected request
+      setFriendRequests((prev) => prev.filter((uid) => uid !== requestUid));
+      alert('Friend request rejected.');
+    } catch (err) {
+      console.error('Error rejecting friend request:', err);
+      setError('Failed to reject the friend request.');
+    }
+  };
+
+  return (
+    <div className="friend-requests">
+      <h3>Friend Requests</h3>
+      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {friendRequests.length > 0 ? (
+        friendRequests.map((request) => (
+          <div key={request.uid} className="friend-request">
+            <p>{request.name || 'Unknown User'}</p> {/* Display the user's name */}
+            <button onClick={() => handleAcceptRequest(request.uid)}>Accept</button>
+            <button onClick={() => handleRejectRequest(request.uid)}>Reject</button>
+          </div>
+        ))
+      ) : (
+        <p>No pending requests</p>
+      )}
+    </div>
+  );
+};
+
+function ChatRoom({ setIsChangingProfile }) {
   const dummy = useRef();
-
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false); // State to toggle dropdown
-
-  const messagesRef = collection(firestore, 'messages'); // Use Firestore collection reference
-  const q = query(messagesRef, orderBy('createAt'), limit(25)); // Create query
-
-  const [messages] = useCollectionData(q, { idField: 'id' });
-
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [selectedContactUid, setSelectedContactUid] = useState(null);
+  
+  // Use separate references for global and private messages
+  const globalMessagesRef = collection(firestore, 'globalMessages');
+  const privateMessagesRef = collection(firestore, 'privateMessages');
+  
+  const q = query(globalMessagesRef, orderBy('createAt'), limit(25)); // Query for global messages
+  const [globalMessages] = useCollectionData(q, { idField: 'id' });
+  
   const [formValue, setFormValue] = useState('');
-
-  // Get current user's uid
   const currentUserUid = auth.currentUser.uid; 
 
   const sendMessage = async (e) => {
@@ -535,15 +627,26 @@ function ChatRoom({setIsChangingProfile}) {
 
     const { uid, photoURL } = auth.currentUser; // Get current user
 
-    await addDoc(messagesRef, {
-      text: formValue,
-      createAt: serverTimestamp(),
-      uid,
-      photoURL
-    });
+    if (!selectedContactUid) {
+      // Send to global chat
+      await addDoc(globalMessagesRef, {
+        text: formValue,
+        createAt: serverTimestamp(),
+        uid,
+        photoURL
+      });
+    } else {
+      // Send to private chat
+      await addDoc(privateMessagesRef, {
+        text: formValue,
+        createAt: serverTimestamp(),
+        uid,
+        photoURL,
+        contactUid: selectedContactUid // Include the selected contact's UID
+      });
+    }
 
     setFormValue('');
-
     dummy.current.scrollIntoView({ behavior: 'smooth' });
   };
 
@@ -551,54 +654,79 @@ function ChatRoom({setIsChangingProfile}) {
     setIsDropdownOpen(!isDropdownOpen);
   };
 
-  // useEffect to log messages to the console whenever they change
-  useEffect(() => {
-    if (messages) {
-      console.log('Current Messages:', messages);
-    }
-  }, [messages]); 
+  // Filter private messages
+  const privateMessagesQuery = query(privateMessagesRef, orderBy('createAt'), limit(25));
+  const [privateMessages] = useCollectionData(privateMessagesQuery, { idField: 'id' });
+  
+  const filteredPrivateMessages = privateMessages?.filter(msg => 
+    msg.uid === currentUserUid && msg.contactUid === selectedContactUid || 
+    msg.uid === selectedContactUid && msg.contactUid === currentUserUid
+  ) || [];
 
+  // Function to switch to global chat
+  const handleGlobalChatClick = () => {
+    setSelectedContactUid(null); // Set to null to show global messages
+  };
 
-  return (<>
-    <div className="messages-container">
-      <div className="container">
-        <div className="chats">
-          <FriendSearch currentUserUid={currentUserUid} />
-
-          <Contacts actualUserId={currentUserUid} />
-        </div>
-        <main>
-
-          {messages && messages.map(msg => <ChatMessage key={msg.id} message={msg} />)}
-
-          <span ref={dummy}></span>
-
-        </main>
-      </div>
-     
-      <div className="form-send">
-        <form onSubmit={sendMessage}>
-          <div className="div-input">
-            <input value={formValue} onChange={(e) => setFormValue(e.target.value)} placeholder="say something nice" />
-
-            <button className="submit-btn" type="submit" disabled={!formValue}><i className="bi bi-send"></i> {/* Send Icon */}</button>
+  return (
+    <>
+    <button 
+            className="global-chat-btn"
+            onClick={handleGlobalChatClick}
+          >
+            Global Chat
+          </button>
+      <div className="messages-container">
+        <div className="container">
+          <div className="chats">
+            <FriendSearch currentUserUid={currentUserUid} />
+            <Contacts actualUserId={currentUserUid} onContactClick={setSelectedContactUid} />
           </div>
-        </form>
+          <div className="chat-area">
+            <main>
+              
+              {selectedContactUid 
+                ? filteredPrivateMessages.map(msg => (
+                  <ChatMessage key={msg.id} message={msg} />
+                )) 
+                : globalMessages?.map(msg => (
+                  <ChatMessage key={msg.id} message={msg} />
+                ))
+              }
+              <span ref={dummy}></span>
+            </main>
+            <div className="form-send">
+              <form onSubmit={sendMessage}>
+                <div className="div-input">
+                  <input
+                    value={formValue}
+                    onChange={(e) => setFormValue(e.target.value)}
+                    placeholder="Say something nice"
+                  />
+                  <button className="submit-btn" type="submit" disabled={!formValue}>
+                    <i className="bi bi-send"></i>
+                  </button>
+                </div>
+              </form>
+            </div>
+           
+          </div>
+        </div>
       </div>
       
-    </div>
-    
-
-    {/* Dropdown for choosing profile image */}
-    <div className="dropdown nav">
-      <i className="bi bi-gear" onClick={toggleDropdown}></i> {/* Toggle dropdown */}
-      {isDropdownOpen && (
-        <div className="dropdown-content">
-          <a href="#" onClick={() => setIsChangingProfile(true)}>Choose profile image</a>
-        </div>
-      )}
-    </div>
-  </>)
+      <div className="dropdown nav">
+        <i className="bi bi-gear" onClick={toggleDropdown}></i> {/* Toggle dropdown */}
+        {isDropdownOpen && (
+          <div className="dropdown-content">
+            <a href="#" onClick={() => setIsChangingProfile(true)}>Choose profile image</a>
+            <FriendRequests currentUserUid={currentUserUid} />
+          </div>
+        )}
+         
+         
+      </div>
+    </>
+  );
 }
 
 function ChatMessage(props) {
@@ -610,15 +738,13 @@ function ChatMessage(props) {
 
   useEffect(() => {
     const fetchUserPhotoURL = async () => {
-      console.log('Fetching photo for UID:', uid); // Log the UID being fetched
-
       try {
         const userDocRef = doc(firestore, 'users', uid);
         const userDoc = await getDoc(userDocRef);
 
         if (userDoc.exists()) {
           const userData = userDoc.data();
-          console.log('User Data:', userData); // Log user data for debugging
+           // Log user data for debugging
           setPhotoURL(userData.photoURL); // Get the photoURL from the user's document
         } else {
           console.error('No such user document for UID:', uid); // Improved logging

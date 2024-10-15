@@ -44,6 +44,11 @@ html{
   color: white;
 }
 
+.center-btn {
+  display: flex;
+  align-items:center;
+}
+
 .form-column{
   display: flex;
   flex-direction: column;
@@ -126,26 +131,35 @@ span{
 .messages-container {
   display: flex;
   flex-direction: column;
-  justify-content: flex-end; /* Align form at the bottom */
-  align-items: center;
+  justify-content: center;
+  align-items: flex-end; /* Align everything to the right */
   height: 100vh; /* Full viewport height */
   width: 100%; /* Full width */
   overflow: hidden;
 }
-.container{
+
+.container {
   display: flex;
-  justify-items: center;
   width: 100%;
   height: 100%;
 }
 
-.chats{
+.chats {
   margin-top: 80px;
+  margin-left: 10px;
   height: 80%;
-  width: 15%;
+  width: 20%;
   display: flex;
-  justify-items: center;
   flex-direction: column;
+  justify-items: center;
+}
+
+.chat-area {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-end; /* Align the chat area to the right */
+  width: 80%; /* Takes the remaining space after the chat list */
 }
 
 .chats input{
@@ -203,6 +217,11 @@ span{
   border: none;
   border-radius: 20px;
   background-color: white;
+  transition: 0.3s;
+}
+
+.contact:hover{
+  transform: scale(1.02);
 }
 
 .contact img {
@@ -220,13 +239,14 @@ span{
 
 main {
   margin-top: 80px;
-  height: auto; /* Height for scrolling messages */
-  width: 70%; /* Width of the message container */
-  max-width: 1000px; /* Maximum width to prevent excessive stretching */
-  overflow-y: auto; /* Enables vertical scrolling if needed */
-  border-radius: 8px; /* Optional rounding of corners */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Optional shadow for depth */
+  height: auto;
+  width: 100%; /* Make the main section fill the chat area */
+  margin-right: 10px;
+  overflow-y: auto;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
+
 
 /* Custom Scrollbar Styles */
 main::-webkit-scrollbar {
@@ -246,15 +266,13 @@ main::-webkit-scrollbar-track {
   background: none; /* Background of the scrollbar track */
 }
 
-/* Positioning form at the bottom center */
 .form-send {
+  width: 100%; 
+  margin: 10px;
   display: flex;
-  justify-content: center;
-  margin-top: 10px;
-  margin-bottom: 10px;
-  width: 70%; /* Full width for form send */
-  max-width: 1000px;
+  justify-content: flex-end; /* Align the form to the right */
 }
+
 
 /* Ensure the form takes the full width */
 .form-send form {
@@ -454,4 +472,40 @@ input {
 .grid-avatar-item:hover {
   transform: scale(1.1); /* Slight zoom effect on hover */
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Add a subtle shadow */
+}
+
+.friend-requests {
+  padding: 10px;
+}
+
+.friend-request {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.friend-request p {
+  margin-right: 10px;
+}
+
+.friend-request button {
+  margin-left: 5px;
+}
+
+.global-chat-btn {
+  position: absolute;
+  top: 20px;
+  right: 130px;
+  background-color: #007bff; /* Blue background */
+  color: white; /* White text */
+  border: none; /* No border */
+  padding: 10px; /* Some padding */
+  border-radius: 20px; /* Rounded corners */
+  cursor: pointer; /* Pointer cursor on hover */
+  font-size: 16px; /* Font size */
+  transition: background-color 0.3s ease;
+}
+
+.global-chat-btn:hover {
+  background-color: #0056b3; /* Darker blue on hover */
 }
