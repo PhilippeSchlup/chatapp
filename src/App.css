@@ -162,12 +162,11 @@ span{
   width: 80%; /* Takes the remaining space after the chat list */
 }
 
-.chats input{
-
+.chats input {
   width: 50%;
 }
 
-.chats button{
+.chats button {
   border: none;
   border-radius: 20px;
   padding: 10px 15px;
@@ -182,7 +181,7 @@ span{
   cursor: not-allowed;
 }
 
-.found-user{
+.found-user {
   border-radius: 20px;
   background-color: white;
   display: flex;
@@ -193,12 +192,12 @@ span{
   padding: 0;
 }
 
-.found-user p{
+.found-user p {
   margin: 0;
   font-size: 16px;
 }
 
-.found-user button{
+.found-user button {
   margin-left: 10px;
   margin-right: 10px;
   padding: 3px 6px;
@@ -206,7 +205,7 @@ span{
   background-color: #4CAF50;
 }
 
-.error{
+.error {
   color: red;
 }
 
@@ -220,7 +219,7 @@ span{
   transition: 0.3s;
 }
 
-.contact:hover{
+.contact:hover {
   transform: scale(1.02);
 }
 
@@ -240,13 +239,12 @@ span{
 main {
   margin-top: 80px;
   height: auto;
-  width: 100%; /* Make the main section fill the chat area */
+  width: calc(100% - 10px); /* Make the main section fill the chat area */
   margin-right: 10px;
   overflow-y: auto;
   border-radius: 8px;
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
-
 
 /* Custom Scrollbar Styles */
 main::-webkit-scrollbar {
@@ -267,11 +265,41 @@ main::-webkit-scrollbar-track {
 }
 
 .form-send {
-  width: 100%; 
+  width: calc(100% - 10px);
   margin: 10px;
   display: flex;
   justify-content: flex-end; /* Align the form to the right */
 }
+
+/*_______Responsive_Style_for_500px_or_less________*/
+@media screen and (max-width: 500px) {
+  .messages-container {
+    align-items: center; /* Center content horizontally */
+    justify-content: center; /* Center content vertically */
+    
+  }
+
+  .container {
+    flex-direction: column; /* Stack items vertically */
+    align-items: center;
+  }
+
+  .chats {
+    width: 80%; /* Center contact list and take 80% width */
+    margin: auto;
+    height: auto;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+  }
+
+
+  .contact {
+    width: 100%;
+    margin: 10px 0;
+  }
+}
+
 
 
 /* Ensure the form takes the full width */

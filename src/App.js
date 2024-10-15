@@ -509,7 +509,7 @@ function FriendSearch({ currentUserUid }) {
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Find a friend"
           />
-          <button type="submit" disabled={!searchInput}>Search</button>
+          <button type="submit" disabled={!searchInput}><i class="bi bi-search"></i></button>
         </div>
       </form>
 
@@ -634,38 +634,42 @@ function ChatRoom({ setIsChangingProfile }) {
   const dummy = useRef();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [selectedContactUid, setSelectedContactUid] = useState(null);
-  
-  // Use separate references for global and private messages
+  const [isContactListVisible, setIsContactListVisible] = useState(true);
+  const [isGlobalChatSelected, setIsGlobalChatSelected] = useState(true); // Show global chat by default
+  const [isMobileView, setIsMobileView] = useState(window.innerWidth <= 500);
+
+  // Firebase collections for global and private messages
   const globalMessagesRef = collection(firestore, 'globalMessages');
   const privateMessagesRef = collection(firestore, 'privateMessages');
-  
-  const q = query(globalMessagesRef, orderBy('createAt'), limit(25)); // Query for global messages
-  const [globalMessages] = useCollectionData(q, { idField: 'id' });
-  
-  const [formValue, setFormValue] = useState('');
-  const currentUserUid = auth.currentUser.uid; 
 
+  // Query for global messages
+  const q = query(globalMessagesRef, orderBy('createAt'), limit(25));
+  const [globalMessages] = useCollectionData(q, { idField: 'id' });
+
+  const [formValue, setFormValue] = useState('');
+  const currentUserUid = auth.currentUser.uid;
+
+  // To send a message
   const sendMessage = async (e) => {
     e.preventDefault();
-
-    const { uid, photoURL } = auth.currentUser; // Get current user
+    const { uid, photoURL } = auth.currentUser;
 
     if (!selectedContactUid) {
-      // Send to global chat
+      // Send message to global chat
       await addDoc(globalMessagesRef, {
         text: formValue,
         createAt: serverTimestamp(),
         uid,
-        photoURL
+        photoURL,
       });
     } else {
-      // Send to private chat
+      // Send message to private chat
       await addDoc(privateMessagesRef, {
         text: formValue,
         createAt: serverTimestamp(),
         uid,
         photoURL,
-        contactUid: selectedContactUid // Include the selected contact's UID
+        contactUid: selectedContactUid,
       });
     }
 
@@ -673,80 +677,119 @@ function ChatRoom({ setIsChangingProfile }) {
     dummy.current.scrollIntoView({ behavior: 'smooth' });
   };
 
-  const toggleDropdown = () => {
-    setIsDropdownOpen(!isDropdownOpen);
-  };
+  // Toggle dropdown for profile options
+  const toggleDropdown = () => setIsDropdownOpen(!isDropdownOpen);
 
-  // Filter private messages
+  // Query for private messages
   const privateMessagesQuery = query(privateMessagesRef, orderBy('createAt'), limit(25));
   const [privateMessages] = useCollectionData(privateMessagesQuery, { idField: 'id' });
-  
-  const filteredPrivateMessages = privateMessages?.filter(msg => 
-    msg.uid === currentUserUid && msg.contactUid === selectedContactUid || 
-    msg.uid === selectedContactUid && msg.contactUid === currentUserUid
+
+  const filteredPrivateMessages = privateMessages?.filter(
+    (msg) =>
+      (msg.uid === currentUserUid && msg.contactUid === selectedContactUid) ||
+      (msg.uid === selectedContactUid && msg.contactUid === currentUserUid)
   ) || [];
 
-  // Function to switch to global chat
+  // Global chat click handler
   const handleGlobalChatClick = () => {
-    setSelectedContactUid(null); // Set to null to show global messages
+    setSelectedContactUid(null); // Set to null to show global chat
+    setIsGlobalChatSelected(true);
+    if (isMobileView) setIsContactListVisible(false); // Hide contacts list on mobile
   };
+
+  // Contact click handler
+  const handleContactClick = (contactUid) => {
+    setSelectedContactUid(contactUid);
+    setIsGlobalChatSelected(false);
+    if (isMobileView) setIsContactListVisible(false); // Hide contacts list on mobile
+  };
+
+  // Back button click handler (for mobile view)
+  const handleBackClick = () => {
+    setIsContactListVisible(true); // Show contacts list
+    setSelectedContactUid(null);
+    setIsGlobalChatSelected(false);
+  };
+
+  // Listener to update mobile view state when window is resized
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileView(window.innerWidth <= 500);
+      if (window.innerWidth > 500) {
+        setIsContactListVisible(true); // Always show contact list on larger screens
+      }
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
     <>
-    <button 
-            className="global-chat-btn"
-            onClick={handleGlobalChatClick}
-          >
-            Global Chat
-          </button>
       <div className="messages-container">
         <div className="container">
-          <div className="chats">
-            <FriendSearch currentUserUid={currentUserUid} />
-            <Contacts actualUserId={currentUserUid} onContactClick={setSelectedContactUid} />
-          </div>
-          <div className="chat-area">
-            <main>
-              
-              {selectedContactUid 
-                ? filteredPrivateMessages.map(msg => (
-                  <ChatMessage key={msg.id} message={msg} />
-                )) 
-                : globalMessages?.map(msg => (
-                  <ChatMessage key={msg.id} message={msg} />
-                ))
-              }
-              <span ref={dummy}></span>
-            </main>
-            <div className="form-send">
-              <form onSubmit={sendMessage}>
-                <div className="div-input">
-                  <input
-                    value={formValue}
-                    onChange={(e) => setFormValue(e.target.value)}
-                    placeholder="Say something nice"
-                  />
-                  <button className="submit-btn" type="submit" disabled={!formValue}>
-                    <i className="bi bi-send"></i>
-                  </button>
-                </div>
-              </form>
+          {/* Back button for mobile view */}
+          {!isContactListVisible && isMobileView && (
+            <button className="back-button" onClick={handleBackClick}>
+              <i className="bi bi-arrow-left"></i> Back
+            </button>
+          )}
+
+          {/* Contact list (visible when not in chat or always on larger screens) */}
+          {(isContactListVisible || !isMobileView) && (
+            <div className="chats">
+              <FriendSearch currentUserUid={currentUserUid} />
+              <Contacts actualUserId={currentUserUid} onContactClick={handleContactClick} />
             </div>
-           
-          </div>
+          )}
+
+          {/* Chat area (either global or private chat) */}
+          {(!isContactListVisible || !isMobileView) && (
+            <div className="chat-area">
+              <main>
+                {isGlobalChatSelected ? (
+                  globalMessages?.map((msg) => <ChatMessage key={msg.id} message={msg} />)
+                ) : (
+                  filteredPrivateMessages?.map((msg) => <ChatMessage key={msg.id} message={msg} />)
+                )}
+                <span ref={dummy}></span>
+              </main>
+
+              <div className="form-send">
+                <form onSubmit={sendMessage}>
+                  <div className="div-input">
+                    <input
+                      value={formValue}
+                      onChange={(e) => setFormValue(e.target.value)}
+                      placeholder="Say something nice"
+                    />
+                    <button className="submit-btn" type="submit" disabled={!formValue}>
+                      <i className="bi bi-send"></i>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
         </div>
       </div>
-      
+
+      {/* Global chat button (visible when contacts list is shown or on larger screens) */}
+      {(isContactListVisible || !isMobileView) && (
+        <button className="global-chat-btn" onClick={handleGlobalChatClick}>
+          Global Chat
+        </button>
+      )}
+
+      {/* Dropdown for settings */}
       <div className="dropdown nav">
-        <i className="bi bi-gear" onClick={toggleDropdown}></i> {/* Toggle dropdown */}
+        <i className="bi bi-gear" onClick={toggleDropdown}></i>
         {isDropdownOpen && (
           <div className="dropdown-content">
             <a href="#" onClick={() => setIsChangingProfile(true)}>Choose profile image</a>
             <FriendRequests currentUserUid={currentUserUid} />
           </div>
         )}
-         
-         
       </div>
     </>
   );
