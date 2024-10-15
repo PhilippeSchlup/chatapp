@@ -1,5 +1,5 @@
 {
-  "homepage": "https://philippe-schlup.github.io/chatapp",
+  "homepage": "https://philippeschlup.github.io/chatapp",
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
