@@ -501,8 +501,8 @@ function FriendSearch({ currentUserUid }) {
   const isUserAdded = (userUid) => contacts.includes(userUid); // Check if the user is already in contacts
 
   return (
-    <div>
-      <form onSubmit={handleSearch}>
+    <div className="search-form">
+      <form  onSubmit={handleSearch}>
         <div>
           <input
             value={searchInput}
