@@ -29,6 +29,25 @@ function App() {
   const [isSigningUp, setIsSigningUp] = useState(false);
   const [isChangingProfile, setIsChangingProfile] = useState(false);
 
+  // Set the viewport height dynamically
+  useEffect(() => {
+    const setVh = () => {
+      let vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+
+    // Set the initial value
+    setVh();
+
+    // Update on window resize
+    window.addEventListener('resize', setVh);
+
+    // Clean up event listener on unmount
+    return () => {
+      window.removeEventListener('resize', setVh);
+    };
+  }, []);
+
   return (
     <div className="head-background">
       <div>
