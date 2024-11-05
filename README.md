@@ -1,3 +1,10 @@
+# Chatapp
+
+## Overview
+Chatapp is a real-time messaging web application built with React and Firebase. 
+This app allows users to connect with friends, send direct messages, and participate in a global chat room. 
+It is designed to provide a seamless and interactive user experience for communication.
+
 # Getting Started with Create React App
 
 This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
