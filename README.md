@@ -10,5 +10,5 @@ It is designed to provide a seamless and interactive communication user experien
 </p>
 
 <p align="center">
-  <img src="https://github.com/user-attachments/assets/503ea2eb-f108-44f3-86e9-b996f8302ae3">
+  <img src="https://github.com/user-attachments/assets/78d8c1df-ebbf-4473-8c4a-7017283ad91e">
 </p>
