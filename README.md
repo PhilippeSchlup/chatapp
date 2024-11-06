@@ -6,5 +6,5 @@ This app allows users to connect with friends, send direct messages, and partici
 It is designed to provide a seamless and interactive communication user experience.
 
 <p align="center">
-  ![image](https://github.com/user-attachments/assets/9d501918-cc75-4f35-b32f-b5909b2acd1f)
+  <img src="[https://picsum.photos/460/300](https://github.com/user-attachments/assets/9d501918-cc75-4f35-b32f-b5909b2acd1f)">
 </p>
